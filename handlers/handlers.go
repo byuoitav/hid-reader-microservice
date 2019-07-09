@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/go-rpio"
 	"github.com/labstack/echo"
@@ -90,31 +91,71 @@ func HoldOff(ctx echo.Context) error {
 // StartListen .
 func StartListen() {
 	go ReadIn()
+	//	go tempRead()
+}
+
+func tempRead() {
+	pin := rpio.Pin(6)
+	pin.Input()
+	for {
+		var bytes []int
+		for {
+			if len(bytes) >= 10 {
+				break
+			}
+			res := pin.Read()
+			if res == rpio.Low {
+				bytes = append(bytes, 1)
+			}
+		}
+		fmt.Printf("Bytes: %v\n", bytes)
+	}
 }
 
 // ReadIn .
 func ReadIn() {
-	pin1 := rpio.Pin(9)
+	pin0 := rpio.Pin(6)
+	pin0.Input()
+	pin1 := rpio.Pin(10)
 	pin1.Input()
-	res1 := pin1.Read()
-	oldRes1 := res1
-
-	pin2 := rpio.Pin(10)
-	pin2.Input()
-	res2 := pin2.Read()
-	oldRes2 := res2
-
 	for {
-		if oldRes1 != res1 {
-			fmt.Printf("Res1: %v", res1)
-		}
-		oldRes1 = res1
-		res1 = pin1.Read()
+		r0 := pin0.Read()
+		r1 := pin1.Read()
+		if r0 == rpio.Low || r1 == rpio.Low {
+			if r1 == rpio.Low {
+				var bytes []int
+				if r0 == rpio.Low {
+					bytes = append(bytes, 0)
+				} else {
+					bytes = append(bytes, 1)
+				}
 
-		if oldRes2 != res2 {
-			fmt.Printf("Res2: %v", res2)
+				read0 := false
+				read1 := false
+				for {
+					if len(bytes) >= 130 {
+						break
+					}
+					r0 = pin0.Read()
+					r1 = pin1.Read()
+					if r0 == rpio.High {
+						read0 = false
+					}
+					if r1 == rpio.High {
+						read1 = false
+					}
+					if r0 == rpio.Low && !read0 {
+						bytes = append(bytes, 0)
+						read0 = true
+					}
+					if r1 == rpio.Low && !read1 {
+						bytes = append(bytes, 1)
+						read1 = true
+					}
+				}
+				fmt.Printf("Bytes: %v\n", bytes)
+				time.Sleep(3 * time.Second)
+			}
 		}
-		oldRes2 = res2
-		res2 = pin2.Read()
 	}
 }
