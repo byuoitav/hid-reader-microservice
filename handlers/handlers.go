@@ -2,8 +2,13 @@ package handlers
 
 import (
 	"fmt"
+	"math"
 	"time"
 
+	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/room-auth-ms/structs"
+	"github.com/byuoitav/wso2services/wso2requests"
 	"github.com/go-rpio"
 	"github.com/labstack/echo"
 )
@@ -91,71 +96,131 @@ func HoldOff(ctx echo.Context) error {
 // StartListen .
 func StartListen() {
 	go ReadIn()
-	//	go tempRead()
-}
-
-func tempRead() {
-	pin := rpio.Pin(6)
-	pin.Input()
-	for {
-		var bytes []int
-		for {
-			if len(bytes) >= 10 {
-				break
-			}
-			res := pin.Read()
-			if res == rpio.Low {
-				bytes = append(bytes, 1)
-			}
-		}
-		fmt.Printf("Bytes: %v\n", bytes)
-	}
+	//go EdgeDetect()
 }
 
 // ReadIn .
 func ReadIn() {
-	pin0 := rpio.Pin(6)
+	pin0 := rpio.Pin(23)
 	pin0.Input()
-	pin1 := rpio.Pin(10)
+	pin1 := rpio.Pin(24)
 	pin1.Input()
+
+	last0 := rpio.High
+	last1 := rpio.High
+	lastRead := time.Now()
+	printy := false
+	bitcount := 0
+	var bytes []int64
 	for {
 		r0 := pin0.Read()
 		r1 := pin1.Read()
-		if r0 == rpio.Low || r1 == rpio.Low {
-			if r1 == rpio.Low {
-				var bytes []int
-				if r0 == rpio.Low {
-					bytes = append(bytes, 0)
-				} else {
-					bytes = append(bytes, 1)
-				}
 
-				read0 := false
-				read1 := false
-				for {
-					if len(bytes) >= 130 {
-						break
+		if r0 == rpio.Low && r1 == rpio.High && last0 == rpio.High {
+			fmt.Printf("0")
+			bytes = append(bytes, 0)
+			lastRead = time.Now()
+			printy = false
+			bitcount++
+		}
+
+		if r1 == rpio.Low && r0 == rpio.High && last1 == rpio.High {
+			fmt.Printf("1")
+			bytes = append(bytes, 1)
+			lastRead = time.Now()
+			printy = false
+			bitcount++
+		}
+
+		if time.Now().Sub(lastRead).Seconds() >= 1 {
+			if !printy {
+				fmt.Printf("\nBits: %v\n", bitcount)
+				if bitcount != 48 {
+					fmt.Println("Bad Read")
+				} else {
+					var num int64
+					for i := len(bytes) - 1; i > 24; i-- {
+						num += int64(math.Exp2(float64((len(bytes)-i)-1))) * bytes[i]
 					}
-					r0 = pin0.Read()
-					r1 = pin1.Read()
-					if r0 == rpio.High {
-						read0 = false
+					fmt.Printf("FOR MATT (PRE-MATH): %v\n", num)
+					if num%2 == 1 {
+						num--
 					}
-					if r1 == rpio.High {
-						read1 = false
+					num /= 2
+					fmt.Printf("POST_MATH: %v\n", num)
+					netID, err := GetNetID(fmt.Sprintf("%d", num))
+					if err != nil {
+						fmt.Printf("Ruh Roh!: %v\n", err.Error())
 					}
-					if r0 == rpio.Low && !read0 {
-						bytes = append(bytes, 0)
-						read0 = true
-					}
-					if r1 == rpio.Low && !read1 {
-						bytes = append(bytes, 1)
-						read1 = true
-					}
+					fmt.Printf("NetID: %s\n", netID)
 				}
-				fmt.Printf("Bytes: %v\n", bytes)
-				time.Sleep(3 * time.Second)
+				bytes = bytes[:0]
+				printy = true
+				bitcount = 0
+			}
+
+		}
+		last0 = r0
+		last1 = r1
+	}
+}
+
+// GetNetID takes the Card Serial Number and uses the Person API to return their info
+func GetNetID(cardNumber string) (string, *nerr.E) {
+	//this is where we get the NetID
+
+	var output structs.WSO2CredentialResponse
+	log.L.Debugf("%s\n", cardNumber)
+	err := wso2requests.MakeWSO2Request("GET", "https://api.byu.edu:443/byuapi/persons/v3/?credentials.credential_type=SEOS_CARD&credentials.credential_id="+cardNumber, "", &output)
+	if err != nil {
+		log.L.Debugf("Error when making WSO2 request %v", err)
+		return "", err
+	}
+	log.L.Debugf("this is the output %v", output)
+	NetID := output.Values[0].Basic.NetID.Value
+	return NetID, nil
+}
+
+// EdgeDetect .
+func EdgeDetect() {
+	pin0 := rpio.Pin(24)
+	pin0.Input()
+	pin1 := rpio.Pin(23)
+	pin1.Input()
+
+	pin0.PullUp()
+	pin1.PullUp()
+
+	pin0.Detect(rpio.FallEdge)
+	pin1.Detect(rpio.FallEdge)
+
+	lastRead := time.Now()
+	printy := false
+	bitcount := 0
+	for {
+
+		if pin0.EdgeDetected() && pin1.Read() == rpio.High {
+			fmt.Printf("0")
+			lastRead = time.Now()
+			printy = false
+			bitcount++
+		}
+
+		if pin1.EdgeDetected() && pin0.Read() == rpio.High {
+			fmt.Printf("1")
+			lastRead = time.Now()
+			printy = false
+			bitcount++
+		}
+
+		if !printy {
+			if time.Now().Sub(lastRead).Seconds() >= 1 {
+				fmt.Printf("\nBits: %v\n", bitcount)
+				printy = true
+				bitcount = 0
+
 			}
 		}
+
 	}
 }
