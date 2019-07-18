@@ -3,10 +3,15 @@ package handlers
 import (
 	"fmt"
 	"math"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/byuoitav/central-event-system/hub/base"
+	"github.com/byuoitav/central-event-system/messenger"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
+	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/room-auth-ms/structs"
 	"github.com/byuoitav/wso2services/wso2requests"
 	"github.com/go-rpio"
@@ -101,6 +106,10 @@ func StartListen() {
 
 // ReadIn .
 func ReadIn() {
+	messenger, er := messenger.BuildMessenger("ITB-1101-CP4:10023", base.Messenger, 5000)
+	if er != nil {
+		log.L.Fatalf("failed to build messenger: %s", er)
+	}
 	pin0 := rpio.Pin(23)
 	pin0.Input()
 	pin1 := rpio.Pin(24)
@@ -153,6 +162,7 @@ func ReadIn() {
 						fmt.Printf("Ruh Roh!: %v\n", err.Error())
 					}
 					fmt.Printf("NetID: %s\n", netID)
+					SendEvent(netID, *messenger)
 				}
 				bytes = bytes[:0]
 				printy = true
@@ -223,4 +233,44 @@ func EdgeDetect() {
 		}
 
 	}
+}
+
+// SendEvent sends an event
+func SendEvent(netid string, runner messenger.Messenger) {
+
+	room := os.Getenv("SYSTEM_ID")
+	a := strings.Split(room, "-")
+	roominfo := events.BasicRoomInfo{}
+	if len(a) == 3 {
+		roominfo = events.BasicRoomInfo{
+			BuildingID: a[0],
+			RoomID:     a[0] + "-" + a[1],
+		}
+	} else {
+		roominfo = events.BasicRoomInfo{
+			BuildingID: room,
+			RoomID:     room,
+		}
+	}
+
+	basicdevice := events.BasicDeviceInfo{
+		BasicRoomInfo: roominfo,
+		DeviceID:      os.Getenv("SYSTEM_ID"),
+	}
+
+	Event := events.Event{
+		GeneratingSystem: os.Getenv("SYSTEM_ID"),
+		Timestamp:        time.Now(),
+		Key:              "Login",
+		Value:            "True",
+		User:             netid,
+		TargetDevice:     basicdevice,
+		AffectedRoom:     roominfo,
+		EventTags: []string{
+			events.Heartbeat,
+		},
+	}
+
+	runner.SendEvent(Event)
+
 }
