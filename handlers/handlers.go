@@ -151,12 +151,10 @@ func ReadIn() {
 					for i := len(bytes) - 1; i > 24; i-- {
 						num += int64(math.Exp2(float64((len(bytes)-i)-1))) * bytes[i]
 					}
-					fmt.Printf("FOR MATT (PRE-MATH): %v\n", num)
 					if num%2 == 1 {
 						num--
 					}
 					num /= 2
-					fmt.Printf("POST_MATH: %v\n", num)
 					netID, err := GetNetID(fmt.Sprintf("%d", num))
 					if err != nil {
 						fmt.Printf("Ruh Roh!: %v\n", err.Error())
