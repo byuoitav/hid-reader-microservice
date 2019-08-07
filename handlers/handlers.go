@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -160,7 +161,11 @@ func ReadIn() {
 						fmt.Printf("Ruh Roh!: %v\n", err.Error())
 					}
 					fmt.Printf("NetID: %s\n", netID)
-					SendEvent(netID, *messenger)
+					var cardID string
+					for i := range bytes {
+						cardID += strconv.Itoa(i)
+					}
+					SendEvent(cardID, *messenger)
 				}
 				bytes = bytes[:0]
 				printy = true
