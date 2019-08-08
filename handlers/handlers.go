@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,8 +14,8 @@ import (
 	"github.com/byuoitav/common/v2/events"
 	"github.com/byuoitav/room-auth-ms/structs"
 	"github.com/byuoitav/wso2services/wso2requests"
-	"github.com/go-rpio"
 	"github.com/labstack/echo"
+	"github.com/stianeikeland/go-rpio"
 )
 
 // Beep activates the beep
@@ -156,16 +155,18 @@ func ReadIn() {
 						num--
 					}
 					num /= 2
-					netID, err := GetNetID(fmt.Sprintf("%d", num))
-					if err != nil {
-						fmt.Printf("Ruh Roh!: %v\n", err.Error())
-					}
-					fmt.Printf("NetID: %s\n", netID)
-					var cardID string
-					for i := range bytes {
-						cardID += strconv.Itoa(i)
-					}
-					SendEvent(cardID, *messenger)
+					/*
+						netID, err := GetNetID(fmt.Sprintf("%d", num))
+						if err != nil {
+							fmt.Printf("Ruh Roh!: %v\n", err.Error())
+						}
+						fmt.Printf("NetID: %s\n", netID)
+						var cardID string
+						for i := range bytes {
+							cardID += strconv.Itoa(i)
+						}
+					*/
+					SendEvent(fmt.Sprintf("%d", num), *messenger)
 				}
 				bytes = bytes[:0]
 				printy = true
@@ -239,7 +240,7 @@ func EdgeDetect() {
 }
 
 // SendEvent sends an event
-func SendEvent(netid string, runner messenger.Messenger) {
+func SendEvent(cardID string, runner messenger.Messenger) {
 
 	room := os.Getenv("SYSTEM_ID")
 	a := strings.Split(room, "-")
@@ -264,9 +265,8 @@ func SendEvent(netid string, runner messenger.Messenger) {
 	Event := events.Event{
 		GeneratingSystem: os.Getenv("SYSTEM_ID"),
 		Timestamp:        time.Now(),
-		Key:              "Login",
-		Value:            "True",
-		User:             netid,
+		Key:              "card-read",
+		Value:            cardID,
 		TargetDevice:     basicdevice,
 		AffectedRoom:     roominfo,
 		EventTags: []string{

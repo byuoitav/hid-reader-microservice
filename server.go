@@ -7,7 +7,7 @@ import (
 	"github.com/byuoitav/common"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/hid-reader-microservice/handlers"
-	"github.com/go-rpio"
+	"github.com/stianeikeland/go-rpio"
 )
 
 func main() {
