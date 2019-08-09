@@ -106,7 +106,7 @@ func StartListen() {
 
 // ReadIn .
 func ReadIn() {
-	messenger, er := messenger.BuildMessenger("ITB-1101-CP4:10023", base.Messenger, 5000)
+	messenger, er := messenger.BuildMessenger(os.Getenv("HUB_ADDRESS"), base.Messenger, 5000)
 	if er != nil {
 		log.L.Fatalf("failed to build messenger: %s", er)
 	}
