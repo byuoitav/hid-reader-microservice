@@ -1,0 +1,11 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: byuoitav/build-env:master
+    working_directory: lab-attendance
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: make build
+      - run: make docker
