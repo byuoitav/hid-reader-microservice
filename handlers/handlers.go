@@ -166,6 +166,7 @@ func ReadIn() {
 							cardID += strconv.Itoa(i)
 						}
 					*/
+					log.L.Debugf("Read CardID: %d", num)
 					SendEvent(fmt.Sprintf("%d", num), *messenger)
 				}
 				bytes = bytes[:0]
@@ -273,6 +274,8 @@ func SendEvent(cardID string, runner messenger.Messenger) {
 			events.Heartbeat,
 		},
 	}
+
+	log.L.Debugf("Sending event: %v+", Event)
 
 	runner.SendEvent(Event)
 
