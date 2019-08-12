@@ -146,6 +146,7 @@ func ReadIn() {
 				fmt.Printf("\nBits: %v\n", bitcount)
 				if bitcount != 48 {
 					fmt.Println("Bad Read")
+					SendCardReadErrorEvent(messenger)
 				} else {
 					var num int64
 					for i := len(bytes) - 1; i > 24; i-- {
@@ -167,7 +168,7 @@ func ReadIn() {
 						}
 					*/
 					log.L.Debugf("Read CardID: %d", num)
-					SendEvent(fmt.Sprintf("%d", num), *messenger)
+					SendEvent(fmt.Sprintf("%d", num), messenger)
 				}
 				bytes = bytes[:0]
 				printy = true
@@ -241,7 +242,7 @@ func EdgeDetect() {
 }
 
 // SendEvent sends an event
-func SendEvent(cardID string, runner messenger.Messenger) {
+func SendEvent(cardID string, runner *messenger.Messenger) {
 
 	room := os.Getenv("SYSTEM_ID")
 	a := strings.Split(room, "-")
@@ -279,4 +280,43 @@ func SendEvent(cardID string, runner messenger.Messenger) {
 
 	runner.SendEvent(Event)
 
+}
+
+// SendCardReadErrorEvent sends a card-read-error event
+func SendCardReadErrorEvent(m *messenger.Messenger) {
+
+	room := os.Getenv("SYSTEM_ID")
+	a := strings.Split(room, "-")
+	roominfo := events.BasicRoomInfo{}
+	if len(a) == 3 {
+		roominfo = events.BasicRoomInfo{
+			BuildingID: a[0],
+			RoomID:     a[0] + "-" + a[1],
+		}
+	} else {
+		roominfo = events.BasicRoomInfo{
+			BuildingID: room,
+			RoomID:     room,
+		}
+	}
+
+	basicdevice := events.BasicDeviceInfo{
+		BasicRoomInfo: roominfo,
+		DeviceID:      os.Getenv("SYSTEM_ID"),
+	}
+
+	e := events.Event{
+		GeneratingSystem: os.Getenv("SYSTEM_ID"),
+		Timestamp:        time.Now(),
+		Key:              "card-read-error",
+		Value:            "true",
+		TargetDevice:     basicdevice,
+		AffectedRoom:     roominfo,
+		EventTags: []string{
+			events.Heartbeat,
+		},
+	}
+
+	log.L.Debugf("Sending event: %v+", e)
+	m.SendEvent(e)
 }
