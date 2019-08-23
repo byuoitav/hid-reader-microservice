@@ -110,9 +110,9 @@ func ReadIn() {
 	if er != nil {
 		log.L.Fatalf("failed to build messenger: %s", er)
 	}
-	pin0 := rpio.Pin(23)
+	pin0 := rpio.Pin(14)
 	pin0.Input()
-	pin1 := rpio.Pin(24)
+	pin1 := rpio.Pin(15)
 	pin1.Input()
 
 	last0 := rpio.High
