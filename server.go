@@ -23,6 +23,7 @@ func main() {
 		log.L.Fatalf("Failed to start the messenger: %s", err)
 	}
 
+	// Setup GPIO for other operations
 	err = rpio.Open()
 	if err != nil {
 		fmt.Printf("ERROR OPENING GPIO: %s\n", err)
@@ -46,6 +47,7 @@ func main() {
 		log.L.Fatalf("Failed to start listening to card reader: %s", err)
 	}
 
+	// Listen for card read events and convert them into Card ID's
 	go func() {
 		for {
 			cardBinary := <-cardChan
@@ -64,7 +66,6 @@ func main() {
 	}()
 
 	router := common.NewRouter()
-	log.SetLevel("debug")
 
 	router.POST("/beep", handlers.Beep)
 	router.POST("/beepoff", handlers.BeepOff)

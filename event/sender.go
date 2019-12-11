@@ -12,6 +12,8 @@ import (
 	"github.com/byuoitav/common/v2/events"
 )
 
+// Sender represents a messenger that possesses all the information necessary
+// to send events to the central event hub
 type Sender struct {
 	m        *messenger.Messenger
 	roomInfo events.BasicRoomInfo
@@ -32,6 +34,7 @@ func NewSender(addr, sysID string) (*Sender, error) {
 
 	sender.m = m
 
+	// Setup all the room/device info structs
 	sender.sysID = sysID
 	a := strings.Split(sysID, "-")
 	if len(a) == 3 {

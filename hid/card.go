@@ -16,6 +16,7 @@ func GetCardID(binary string) (string, error) {
 		return "", ErrBadFormat
 	}
 
+	// Convert the binary string to an int
 	id, err := strconv.ParseUint(binary[24:47], 2, 32)
 	if err != nil {
 		return "", fmt.Errorf("Error while parsing binary: %w", err)
