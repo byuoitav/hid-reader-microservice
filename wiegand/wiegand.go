@@ -1,17 +1,14 @@
 package wiegand
 
 import (
-	"errors"
 	"fmt"
-	"log"
-	"os"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
-	"github.com/warthog618/gpio"
+	"periph.io/x/periph/conn/gpio"
+	"periph.io/x/periph/conn/gpio/gpioreg"
+	"periph.io/x/periph/host"
 )
 
 // Reader represents the configuration necessary to watch a card reader
@@ -29,44 +26,48 @@ type Reader struct {
 // configured reader
 func (r *Reader) Setup() error {
 
-	err := gpio.Open()
-	// Ignore ErrAlreadyOpen
-	if err != nil && !errors.Is(err, gpio.ErrAlreadyOpen) {
+	// Initialize host drivers
+	_, err := host.Init()
+	if err != nil {
 		return fmt.Errorf("Error while trying to initialize GPIO pins: %w", err)
 	}
-	//defer gpio.Close()
 
+	// Initialize the buffer
 	r.lastPulse = time.Now()
 	r.buffer = make([]int, r.BufferSize)
 	r.bitsCounted = 0
 
-	data0 := gpio.NewPin(14)
-	data1 := gpio.NewPin(15)
-	data0.Input()
-	data1.Input()
+	// Setup the pins
+	data0 := gpioreg.ByName("14")
+	data1 := gpioreg.ByName("15")
 
-	err = data0.Watch(gpio.EdgeFalling, r.watchData0)
+	err = data0.In(gpio.PullUp, gpio.FallingEdge)
 	if err != nil {
-		return fmt.Errorf("Error while trying to watch data0 pin: %w", err)
+		return fmt.Errorf("Error while setting up data0 pin: %w", err)
 	}
-	data1.Watch(gpio.EdgeFalling, r.watchData1)
+	err = data1.In(gpio.PullUp, gpio.FallingEdge)
 	if err != nil {
-		return fmt.Errorf("Error while trying to watch data1 pin: %w", err)
+		return fmt.Errorf("Error while setting up data1 pin: %w", err)
 	}
 
-	// defer data0.Unwatch()
-	// defer data1.Unwatch()
-
-	// Catch ctrl+c plus kill commands
-	catch := make(chan os.Signal, 1)
-	signal.Notify(catch, os.Interrupt, syscall.SIGTERM)
+	// Watch for falling edge on Data0 Pin
 	go func() {
-		<-catch
-		log.Println("Cleaning up...")
-		data0.Unwatch()
-		data1.Unwatch()
-		gpio.Close()
-		os.Exit(1)
+		for {
+			data0.WaitForEdge(-1)
+			r.lastPulse = time.Now()
+			r.buffer[r.bitsCounted] = 0
+			r.bitsCounted++
+		}
+	}()
+
+	// Watch for falling edge on Data1 Pin
+	go func() {
+		for {
+			data1.WaitForEdge(-1)
+			r.lastPulse = time.Now()
+			r.buffer[r.bitsCounted] = 1
+			r.bitsCounted++
+		}
 	}()
 
 	// Start watching the reader
@@ -75,18 +76,8 @@ func (r *Reader) Setup() error {
 	return nil
 }
 
-func (r *Reader) watchData0(p *gpio.Pin) {
-	r.lastPulse = time.Now()
-	r.buffer[r.bitsCounted] = 0
-	r.bitsCounted++
-}
-
-func (r *Reader) watchData1(p *gpio.Pin) {
-	r.lastPulse = time.Now()
-	r.buffer[r.bitsCounted] = 1
-	r.bitsCounted++
-}
-
+// watchForCard continuously watches to see if a card read has finished and when
+// it has then it will send the the card binary down the notifier channel
 func (r *Reader) watchForCard() {
 	for {
 		if time.Now().Sub(r.lastPulse) > (50*time.Millisecond) && r.bitsCounted > 0 {
@@ -108,6 +99,8 @@ func (r *Reader) watchForCard() {
 
 }
 
+// sendCardBinary sends the given integer slice as a string of integers (binary
+// string) to the given notifier channel
 func (r *Reader) sendCardBinary(bin []int, numBits int) {
 
 	// Turn the int slice into a string

@@ -14,4 +14,5 @@ require (
 	github.com/stianeikeland/go-rpio v4.2.0+incompatible
 	github.com/warthog618/gpio v0.6.1
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
+	periph.io/x/periph v3.6.2+incompatible
 )
