@@ -99,3 +99,23 @@ func (s *Sender) SendCardReadErrorEvent(bits int) {
 
 	s.m.SendEvent(e)
 }
+
+// SendWiringErrorEvent sends a card-reader-wiring-error event
+func (s *Sender) SendWiringErrorEvent(bits int) {
+
+	e := events.Event{
+		GeneratingSystem: s.sysID,
+		Timestamp:        time.Now(),
+		Key:              "card-reader-wiring-error",
+		Value:            strconv.Itoa(bits),
+		TargetDevice:     s.device,
+		AffectedRoom:     s.roomInfo,
+		EventTags: []string{
+			events.Heartbeat,
+		},
+	}
+
+	log.L.Debugf("Sending event: %v+", e)
+
+	s.m.SendEvent(e)
+}

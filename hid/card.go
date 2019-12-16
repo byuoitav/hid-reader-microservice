@@ -12,7 +12,7 @@ var ErrBadFormat = errors.New("The given binary was malformatted")
 func GetCardID(binary string) (string, error) {
 
 	// We expect 48 bits here
-	if len(binary) < 48 {
+	if len(binary) != 48 {
 		return "", ErrBadFormat
 	}
 

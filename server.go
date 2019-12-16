@@ -38,7 +38,7 @@ func main() {
 	reader := wiegand.Reader{
 		Data0Pin:   14,
 		Data1Pin:   15,
-		BufferSize: 48,
+		BufferSize: 52, // Buffering the 48 bits we expect in case of garbage
 		Notifier:   cardChan,
 	}
 
@@ -52,11 +52,24 @@ func main() {
 		for {
 			cardBinary := <-cardChan
 
-			log.L.Debugf("Card binary: %s, bits: %d", cardBinary, len(cardBinary))
+			numBits := len(cardBinary)
+
+			// Send off bad wiring events for reads of less than 24 bits
+			// This is done intentionally to try to separate out bad reads
+			// caused by software vs bad reads caused by wiring
+			// Note: 24 was picked arbitrarily from experience. Most bad reads
+			// due to the non-realtime nature of the pi are typically only a few
+			// (1-4) bits off.
+			if numBits < 24 {
+				log.L.Debugf("Wiring issue, only read %d bits", numBits)
+				sender.SendWiringErrorEvent(numBits)
+			}
+
+			log.L.Debugf("Card binary: %s, bits: %d", cardBinary, numBits)
 			cardID, err := hid.GetCardID(cardBinary)
 			if err != nil {
 				log.L.Debugf("Card Read Error: %s", err)
-				sender.SendCardReadErrorEvent(len(cardBinary))
+				sender.SendCardReadErrorEvent(numBits)
 				continue
 			}
 
