@@ -56,7 +56,7 @@ func main() {
 			cardID, err := hid.GetCardID(cardBinary)
 			if err != nil {
 				log.L.Debugf("Card Read Error: %s", err)
-				sender.SendCardReadErrorEvent()
+				sender.SendCardReadErrorEvent(len(cardBinary))
 				continue
 			}
 

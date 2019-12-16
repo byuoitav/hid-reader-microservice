@@ -3,6 +3,7 @@ package event
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -80,13 +81,13 @@ func (s *Sender) SendCardReadEvent(cardID string) {
 }
 
 // SendCardReadErrorEvent sends a card-read-error event
-func (s *Sender) SendCardReadErrorEvent() {
+func (s *Sender) SendCardReadErrorEvent(bits int) {
 
 	e := events.Event{
 		GeneratingSystem: s.sysID,
 		Timestamp:        time.Now(),
 		Key:              "card-read-error",
-		Value:            "true",
+		Value:            strconv.Itoa(bits),
 		TargetDevice:     s.device,
 		AffectedRoom:     s.roomInfo,
 		EventTags: []string{
