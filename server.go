@@ -63,6 +63,7 @@ func main() {
 			if numBits < 24 {
 				log.L.Debugf("Wiring issue, only read %d bits", numBits)
 				sender.SendWiringErrorEvent(numBits)
+				continue
 			}
 
 			log.L.Debugf("Card binary: %s, bits: %d", cardBinary, numBits)
