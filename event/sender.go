@@ -2,7 +2,6 @@ package event
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -28,7 +27,7 @@ func NewSender(addr, sysID string) (*Sender, error) {
 
 	sender := Sender{}
 
-	m, err := messenger.BuildMessenger(os.Getenv("HUB_ADDRESS"), base.Messenger, 5000)
+	m, err := messenger.BuildMessenger(addr, base.Messenger, 5000)
 	if err != nil {
 		return nil, fmt.Errorf("Error while trying to build messenger: %w", err)
 	}
