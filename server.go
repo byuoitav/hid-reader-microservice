@@ -11,7 +11,9 @@ import (
 	"github.com/byuoitav/hid-reader-microservice/handlers"
 	"github.com/byuoitav/hid-reader-microservice/hid"
 	"github.com/byuoitav/hid-reader-microservice/wiegand"
-	"github.com/stianeikeland/go-rpio"
+
+	// "github.com/stianeikeland/go-rpio"
+	"github.com/stianeikeland/go-rpio/v4"
 )
 
 func main() {

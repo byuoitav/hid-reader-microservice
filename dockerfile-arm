@@ -1,5 +1,6 @@
-FROM byuoitav/arm32v6-alpine
-LABEL Brayden Winterton <brayden_winterton@byu.edu>
+# FROM alpine:3.18
+FROM byuoitav/amd64-alpine
+
 
 ARG NAME
 ENV name=${NAME}
@@ -9,4 +10,4 @@ COPY version.txt version.txt
 
 # add any required files/folders here
 
-ENTRYPOINT ./${name}-arm
+ENTRYPOINT ["/hid-reader-microservice-arm"]

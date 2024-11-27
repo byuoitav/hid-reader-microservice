@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"periph.io/x/periph/conn/gpio"
-	"periph.io/x/periph/conn/gpio/gpioreg"
-	"periph.io/x/periph/host"
+	"periph.io/x/conn/v3/gpio"
+	"periph.io/x/conn/v3/gpio/gpioreg"
+	"periph.io/x/host/v3"
 )
 
 // Reader represents the configuration necessary to watch a card reader
@@ -55,7 +55,8 @@ func (r *Reader) Setup() error {
 		for {
 			data0.WaitForEdge(-1)
 			r.lastPulse = time.Now()
-			r.buffer[r.bitsCounted] = 0
+			r.buffer[r.bitsCounted%r.BufferSize] = 0
+			//r.buffer[r.bitsCounted] = 0
 			r.bitsCounted++
 		}
 	}()
@@ -65,7 +66,8 @@ func (r *Reader) Setup() error {
 		for {
 			data1.WaitForEdge(-1)
 			r.lastPulse = time.Now()
-			r.buffer[r.bitsCounted] = 1
+			r.buffer[r.bitsCounted%r.BufferSize] = 1
+			//r.buffer[r.bitsCounted] = 1
 			r.bitsCounted++
 		}
 	}()
@@ -83,8 +85,11 @@ func (r *Reader) watchForCard() {
 		if time.Now().Sub(r.lastPulse) > (50*time.Millisecond) && r.bitsCounted > 0 {
 
 			// Copy the buffer to send across the channel
-			binCopy := make([]int, r.BufferSize)
-			copy(binCopy, r.buffer)
+			// binCopy := make([]int, r.BufferSize)
+			// copy(binCopy, r.buffer)
+
+			binCopy := make([]int, r.bitsCounted)
+			copy(binCopy, r.buffer[:r.bitsCounted]) // Only copy the counted bits
 
 			go r.sendCardBinary(binCopy, r.bitsCounted)
 
