@@ -7,6 +7,7 @@ require (
 	github.com/byuoitav/common v0.0.0-20230217215806-8472d0ddbfb3
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/stianeikeland/go-rpio v4.2.0+incompatible
+	github.com/stianeikeland/go-rpio/v4 v4.6.0
 	periph.io/x/conn/v3 v3.7.1
 	periph.io/x/host/v3 v3.8.2
 )
@@ -19,7 +20,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/sevenNt/echo-pprof v0.1.0 // indirect
-	github.com/stianeikeland/go-rpio/v4 v4.6.0 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect

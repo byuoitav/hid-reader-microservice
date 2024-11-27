@@ -2,6 +2,7 @@ package wiegand
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -83,15 +84,22 @@ func (r *Reader) Setup() error {
 func (r *Reader) watchForCard() {
 	for {
 		if time.Now().Sub(r.lastPulse) > (50*time.Millisecond) && r.bitsCounted > 0 {
-
+			slog.Info("Card Read", "r.bitsCounted", r.bitsCounted)
+			return
 			// Copy the buffer to send across the channel
 			// binCopy := make([]int, r.BufferSize)
 			// copy(binCopy, r.buffer)
 
-			binCopy := make([]int, r.bitsCounted)
-			copy(binCopy, r.buffer[:r.bitsCounted]) // Only copy the counted bits
+			// Limit bitsCounted to BufferSize to prevent out of range errors
+			numBits := r.bitsCounted
+			if numBits > r.BufferSize {
+				numBits = r.BufferSize
+			}
 
-			go r.sendCardBinary(binCopy, r.bitsCounted)
+			binCopy := make([]int, numBits)
+			copy(binCopy, r.buffer[:numBits]) // Only copy the counted bits
+
+			go r.sendCardBinary(binCopy, numBits)
 
 			// Clear out the buffer
 			r.bitsCounted = 0
